@@ -24,8 +24,45 @@ void UAICommunication::SendMessageToAI(const FString& Prompt)
     request->ProcessRequest();
 }
 
-void UAICommunication::ReceiveMessageFromAI(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+FString UAICommunication::ReceiveMessageFromAI(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
+    // check for errors and/or lack of success
+    if (!bWasSuccessful || !Response.IsValid())
+    {
+        UE_LOG(LogTemp, Error, TEXT("invalid and/or unsuccessful"));
+        return;
+    }
+
+    int32 ResponseCode = Response->GetResponseCode();
+    if (ResponseCode != 200)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Received error codes %d"), ResponseCode);
+        return;
+    }
+    // extract the response
+    FString responseString = Response->GetContentAsString();
+    TSharedPtr<FJsonObject> jsonResult;
+    TSharedRef<TJsonReader<>> reader = TJsonReaderFactory<>::Create(responseString);
+
+    if (FJsonSerializer::Deserialize(reader, jsonResult) && jsonResult.IsValid())
+    {
+        FString AIResponse;
+        if (jsonResult->TryGetStringField("response", AIResponse))
+        {
+            // successful, return the response
+            UE_LOG(LogTemp, Log, TEXT("AI Response: %s"), *AIResponse);
+            return AIResponse;
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Response field not found in JSON"));
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to parse JSON response"));
+    }
+
 }
 
 FString ConstructJsonMessage(const FString& UserInput) {

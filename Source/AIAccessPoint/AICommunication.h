@@ -18,6 +18,6 @@ public:
 	static void SendMessageToAI(const FString& Prompt);
 
 	UFUNCTION(BlueprintCallable, Category = "AI Communication")
-	static void ReceiveMessageFromAI(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+	static FString ReceiveMessageFromAI(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 
 };
