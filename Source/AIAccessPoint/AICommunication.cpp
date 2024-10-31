@@ -5,6 +5,9 @@
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
+
+FString UAICommunication::AIResponseText;
+
 void UAICommunication::SendMessageToAI(const FString& Prompt)
 {
     // check if empty
@@ -27,11 +30,20 @@ void UAICommunication::SendMessageToAI(const FString& Prompt)
     // make and set content
     FString content = ConstructJsonMessage(Prompt);
     request->SetContentAsString(content);
-    request->OnProcessRequestComplete().BindStatic(&UAICommunication::ReceiveMessageFromAI);
+
+    request->OnProcessRequestComplete().BindStatic(&UAICommunication::OnReceiveMessageFromAIResponse);
     request->ProcessRequest();
 }
 
-void UAICommunication::ReceiveMessageFromAI(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+FString UAICommunication::ReceiveMessageFromAI()
+{
+    // displays the result?
+    
+    return AIResponseText;
+}
+
+// helpers:
+void UAICommunication::OnReceiveMessageFromAIResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
     // check for errors and/or lack of success
     if (!bWasSuccessful || !Response.IsValid())
@@ -55,12 +67,12 @@ void UAICommunication::ReceiveMessageFromAI(FHttpRequestPtr Request, FHttpRespon
     if (FJsonSerializer::Deserialize(reader, jsonResult) && jsonResult.IsValid())
     {
         FString AIResponse;
-        if (jsonResult->TryGetStringField("response", AIResponse))
+        if (jsonResult->TryGetStringField(TEXT("response"), AIResponse))
         {
             // successful
             UE_LOG(LogTemp, Log, TEXT("AI Response: %s"), *AIResponse);
-
-            // do something with the response here
+            AIResponseText = AIResponse;
+            
             return;
         }
         else
@@ -76,9 +88,6 @@ void UAICommunication::ReceiveMessageFromAI(FHttpRequestPtr Request, FHttpRespon
     }
 }
 
-
-// helpers:
-
 FString UAICommunication::ConstructJsonMessage(const FString& UserInput) {
     
     TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
@@ -93,3 +102,6 @@ FString UAICommunication::ConstructJsonMessage(const FString& UserInput) {
 
     return JsonString;
 }
+
+
+

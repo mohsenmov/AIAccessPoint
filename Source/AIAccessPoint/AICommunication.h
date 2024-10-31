@@ -2,9 +2,11 @@
 
 #pragma once
 
+#include "HTTP.h"
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "AICommunication.generated.h"
+
 
 /**
  * 
@@ -18,7 +20,12 @@ public:
 	static void SendMessageToAI(const FString& Prompt);
 
 	UFUNCTION(BlueprintCallable, Category = "AI Communication")
-	static void ReceiveMessageFromAI(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+	static FString ReceiveMessageFromAI();
+
+	static FString AIResponseText;
 private:
 	static FString ConstructJsonMessage(const FString& UserInput);
+	static void OnReceiveMessageFromAIResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+
+	
 };
