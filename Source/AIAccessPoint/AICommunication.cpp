@@ -7,6 +7,13 @@
 #include "Interfaces/IHttpResponse.h"
 void UAICommunication::SendMessageToAI(const FString& Prompt)
 {
+    // check if empty
+    if (Prompt.IsEmpty())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Prompt is empty. No request will be sent."));
+        return;
+    }
+
 	FString url = "http://localhost:8000/api/generate";
 	// create request
 	FHttpModule& httpModule = FHttpModule::Get();
@@ -24,7 +31,7 @@ void UAICommunication::SendMessageToAI(const FString& Prompt)
     request->ProcessRequest();
 }
 
-FString UAICommunication::ReceiveMessageFromAI(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+void UAICommunication::ReceiveMessageFromAI(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
     // check for errors and/or lack of success
     if (!bWasSuccessful || !Response.IsValid())
@@ -39,6 +46,7 @@ FString UAICommunication::ReceiveMessageFromAI(FHttpRequestPtr Request, FHttpRes
         UE_LOG(LogTemp, Error, TEXT("Received error codes %d"), ResponseCode);
         return;
     }
+
     // extract the response
     FString responseString = Response->GetContentAsString();
     TSharedPtr<FJsonObject> jsonResult;
@@ -49,29 +57,36 @@ FString UAICommunication::ReceiveMessageFromAI(FHttpRequestPtr Request, FHttpRes
         FString AIResponse;
         if (jsonResult->TryGetStringField("response", AIResponse))
         {
-            // successful, return the response
+            // successful
             UE_LOG(LogTemp, Log, TEXT("AI Response: %s"), *AIResponse);
-            return AIResponse;
+
+            // do something with the response here
+            return;
         }
         else
         {
-            UE_LOG(LogTemp, Warning, TEXT("Response field not found in JSON"));
+            UE_LOG(LogTemp, Warning, TEXT("Response not in JSON"));
+            return;
         }
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to parse JSON response"));
+        UE_LOG(LogTemp, Error, TEXT("Failed to parse JSON"));
+        return;
     }
-
 }
 
-FString ConstructJsonMessage(const FString& UserInput) {
+
+// helpers:
+
+FString UAICommunication::ConstructJsonMessage(const FString& UserInput) {
     
     TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
 
     JsonObject->SetStringField(TEXT("model"), TEXT("llama3.2"));
     JsonObject->SetStringField(TEXT("prompt"), UserInput);
     JsonObject->SetBoolField(TEXT("stream"), false);
+
     FString JsonString;
     TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&JsonString);
     FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
