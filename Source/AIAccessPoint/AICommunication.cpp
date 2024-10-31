@@ -26,7 +26,8 @@ void UAICommunication::SendMessageToAI(const FString& Prompt)
 	request->SetVerb(TEXT("POST"));
     request->SetURL(url);
     request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
-
+    
+    //FString JsonPayload = FString::Printf(TEXT("{\"model\": \"llama3.2\", \"prompt\": \"%s\",\"format\": \"json\", \"stream\": false}"), *Prompt);
     // make and set content
     FString content = ConstructJsonMessage(Prompt);
     request->SetContentAsString(content);
@@ -71,7 +72,8 @@ void UAICommunication::OnReceiveMessageFromAIResponse(FHttpRequestPtr Request, F
         {
             // successful
             UE_LOG(LogTemp, Log, TEXT("AI Response: %s"), *AIResponse);
-            AIResponseText = AIResponse;
+
+            AIResponseText = *AIResponse;
             
             return;
         }
@@ -94,6 +96,7 @@ FString UAICommunication::ConstructJsonMessage(const FString& UserInput) {
 
     JsonObject->SetStringField(TEXT("model"), TEXT("llama3.2"));
     JsonObject->SetStringField(TEXT("prompt"), UserInput);
+    JsonObject->SetStringField(TEXT("format"), "json");
     JsonObject->SetBoolField(TEXT("stream"), false);
 
     FString JsonString;
