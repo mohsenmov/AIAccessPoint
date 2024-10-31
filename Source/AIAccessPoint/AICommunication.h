@@ -13,5 +13,11 @@ UCLASS()
 class AIACCESSPOINT_API UAICommunication : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
-	
+public:
+	UFUNCTION(BlueprintCallable, Category = "AI Communication")
+	static void SendMessageToAI(const FString& Prompt);
+
+	UFUNCTION(BlueprintCallable, Category = "AI Communication")
+	static void ReceiveMessageFromAI(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+
 };
