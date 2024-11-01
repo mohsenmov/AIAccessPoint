@@ -27,9 +27,9 @@ public:
 
 	static FString AIResponseText;
 private:
-	static FString lastResponse;
 	static bool _isRequestComplete;
 	static FString ConstructJsonMessage(const FString& UserInput);
+	static FString ParseAndConcatenateResponse(const FString& responseString);
 	static void OnReceiveMessageFromAIResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 
 	

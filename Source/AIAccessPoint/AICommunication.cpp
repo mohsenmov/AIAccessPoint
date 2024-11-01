@@ -7,10 +7,10 @@
 #include "Interfaces/IHttpResponse.h"
 
 FString UAICommunication::AIResponseText;
-FString UAICommunication::lastResponse;
 bool UAICommunication::_isRequestComplete;
 void UAICommunication::SendMessageToAI(const FString& Prompt)
 {
+    //AIResponseText = "";
     _isRequestComplete = false;
     // check if empty
     if (Prompt.IsEmpty())
@@ -29,18 +29,16 @@ void UAICommunication::SendMessageToAI(const FString& Prompt)
     request->SetURL(url);
     request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
     
-    //FString JsonPayload = FString::Printf(TEXT("{\"model\": \"llama3.2\", \"prompt\": \"%s\",\"format\": \"json\", \"stream\": false}"), *Prompt);
     // make and set content
-    FString content = ConstructJsonMessage(Prompt);
-    request->SetContentAsString(content);
-
+    FString JsonPayload = FString::Printf(TEXT("{\"model\": \"llama3.2\", \"prompt\": \"%s\",\"format\": \"json\",\"stream\": false}"), *Prompt);
+    request->SetContentAsString(JsonPayload);
     request->OnProcessRequestComplete().BindStatic(&UAICommunication::OnReceiveMessageFromAIResponse);
     request->ProcessRequest();
 }
 
 FString UAICommunication::ReceiveMessageFromAI()
 {
-    // displays the result?
+    // displays the result
     if (_isRequestComplete) {
 
         return AIResponseText;
@@ -79,15 +77,25 @@ void UAICommunication::OnReceiveMessageFromAIResponse(FHttpRequestPtr Request, F
     TSharedPtr<FJsonObject> jsonResult;
     TSharedRef<TJsonReader<>> reader = TJsonReaderFactory<>::Create(responseString);
 
+
     if (FJsonSerializer::Deserialize(reader, jsonResult) && jsonResult.IsValid())
     {
-        FString AIResponse;
-        if (jsonResult->TryGetStringField(TEXT("response"), AIResponse))
+        
+        FString CurrAIResponse;
+        bool isDone;
+        jsonResult->TryGetBoolField(TEXT("done"), isDone);
+
+        if (!isDone) {
+            UE_LOG(LogTemp, Warning, TEXT("response not done"));
+            return;
+        }
+
+        if (jsonResult->TryGetStringField(TEXT("response"), CurrAIResponse))
         {
             // successful
-            UE_LOG(LogTemp, Log, TEXT("AI Response: %s"), *AIResponse);
-
-            AIResponseText = AIResponse;
+            UE_LOG(LogTemp, Log, TEXT("AI Response: %s"), *CurrAIResponse);
+            FString concatenatedResponse = ParseAndConcatenateResponse(CurrAIResponse);
+            AIResponseText = concatenatedResponse;//AIResponseText + jsonResult->GetStringField(TEXT("response"));
             _isRequestComplete = true;
             return;
         }
@@ -104,6 +112,7 @@ void UAICommunication::OnReceiveMessageFromAIResponse(FHttpRequestPtr Request, F
     }
 }
 
+// helper to create JSON pay load.
 FString UAICommunication::ConstructJsonMessage(const FString& UserInput) {
     
     TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
@@ -120,5 +129,22 @@ FString UAICommunication::ConstructJsonMessage(const FString& UserInput) {
     return JsonString;
 }
 
+FString UAICommunication::ParseAndConcatenateResponse(const FString& responseString)
+{
+    TSharedPtr<FJsonObject> JsonObject;
+    TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(responseString);
+
+    FString ConcatenatedResponse;
+
+    if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+    {
+        for (const auto& Pair : JsonObject->Values)
+        {
+            ConcatenatedResponse += Pair.Value->AsString() + TEXT(" ");
+        }
+    }
+
+    return ConcatenatedResponse.TrimEnd(); 
+}
 
 
