@@ -2,6 +2,8 @@
 ## Overview
 This project is a simple UE5 UI for sending in prompt to the local Ollama server using HTTP REST Api provided by Ollama.
 ## how to use
+Run Unreal engine.
+navigate to the blankLevel in the project.
 Play the unreal project and simply put your prompt into the prompt box. the press submit. if the response is successful the response box will update with the response recevied from the server.
 ## Set up
 ### set Ollama up
