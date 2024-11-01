@@ -7,9 +7,11 @@
 #include "Interfaces/IHttpResponse.h"
 
 FString UAICommunication::AIResponseText;
-
+FString UAICommunication::lastResponse;
+bool UAICommunication::_isRequestComplete;
 void UAICommunication::SendMessageToAI(const FString& Prompt)
 {
+    _isRequestComplete = false;
     // check if empty
     if (Prompt.IsEmpty())
     {
@@ -39,13 +41,24 @@ void UAICommunication::SendMessageToAI(const FString& Prompt)
 FString UAICommunication::ReceiveMessageFromAI()
 {
     // displays the result?
-    
-    return AIResponseText;
+    if (_isRequestComplete) {
+
+        return AIResponseText;
+    }
+    else {
+        return TEXT("No Response yet");
+    }
+}
+
+bool UAICommunication::GetIsRequestReady()
+{
+    return _isRequestComplete;
 }
 
 // helpers:
 void UAICommunication::OnReceiveMessageFromAIResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
+    
     // check for errors and/or lack of success
     if (!bWasSuccessful || !Response.IsValid())
     {
@@ -62,6 +75,7 @@ void UAICommunication::OnReceiveMessageFromAIResponse(FHttpRequestPtr Request, F
 
     // extract the response
     FString responseString = Response->GetContentAsString();
+    UE_LOG(LogTemp, Log, TEXT("Raw response: %s"), *responseString);
     TSharedPtr<FJsonObject> jsonResult;
     TSharedRef<TJsonReader<>> reader = TJsonReaderFactory<>::Create(responseString);
 
@@ -73,8 +87,8 @@ void UAICommunication::OnReceiveMessageFromAIResponse(FHttpRequestPtr Request, F
             // successful
             UE_LOG(LogTemp, Log, TEXT("AI Response: %s"), *AIResponse);
 
-            AIResponseText = *AIResponse;
-            
+            AIResponseText = AIResponse;
+            _isRequestComplete = true;
             return;
         }
         else

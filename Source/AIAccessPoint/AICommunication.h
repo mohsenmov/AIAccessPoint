@@ -22,8 +22,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "AI Communication")
 	static FString ReceiveMessageFromAI();
 
+	UFUNCTION(BlueprintCallable, Category = "AI Communication")
+	static bool GetIsRequestReady();
+
 	static FString AIResponseText;
 private:
+	static FString lastResponse;
+	static bool _isRequestComplete;
 	static FString ConstructJsonMessage(const FString& UserInput);
 	static void OnReceiveMessageFromAIResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 
