@@ -56,11 +56,12 @@ bool UAICommunication::GetIsRequestReady()
 // helpers:
 void UAICommunication::OnReceiveMessageFromAIResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
-    
+    _isRequestComplete = true;
     // check for errors and/or lack of success
     if (!bWasSuccessful || !Response.IsValid())
     {
         UE_LOG(LogTemp, Error, TEXT("invalid and/or unsuccessful"));
+        AIResponseText = TEXT("Invalid");
         return;
     }
 
@@ -68,6 +69,7 @@ void UAICommunication::OnReceiveMessageFromAIResponse(FHttpRequestPtr Request, F
     if (ResponseCode != 200)
     {
         UE_LOG(LogTemp, Error, TEXT("Received error codes %d"), ResponseCode);
+        AIResponseText = TEXT("Received error codes %d") + ResponseCode;
         return;
     }
 
@@ -87,6 +89,7 @@ void UAICommunication::OnReceiveMessageFromAIResponse(FHttpRequestPtr Request, F
 
         if (!isDone) {
             UE_LOG(LogTemp, Warning, TEXT("response not done"));
+            AIResponseText = TEXT("bad http response");
             return;
         }
 
@@ -96,18 +99,20 @@ void UAICommunication::OnReceiveMessageFromAIResponse(FHttpRequestPtr Request, F
             UE_LOG(LogTemp, Log, TEXT("AI Response: %s"), *CurrAIResponse);
             FString concatenatedResponse = ParseAndConcatenateResponse(CurrAIResponse);
             AIResponseText = concatenatedResponse;//AIResponseText + jsonResult->GetStringField(TEXT("response"));
-            _isRequestComplete = true;
+            
             return;
         }
         else
         {
             UE_LOG(LogTemp, Warning, TEXT("Response not in JSON"));
+            AIResponseText = TEXT("Bad response");
             return;
         }
     }
     else
     {
         UE_LOG(LogTemp, Error, TEXT("Failed to parse JSON"));
+        AIResponseText = TEXT("Bad response");
         return;
     }
 }
